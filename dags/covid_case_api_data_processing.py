@@ -14,8 +14,10 @@ DAG_FOLDER = "/opt/airflow/dags"
 
 
 
-def _upload_to_data_lake(ds):
-    filename = f"{DAG_FOLDER}/{ds}-covid-cases.csv"
+def _upload_to_data_lake(ds,ti):
+    my_name = ti.xcom_pull(task_ids="get_data", key="name")
+    logging.info(my_name)
+    filename = ti.xcom_pull(task_ids="get_data",key="return_value")
 
     hook = S3Hook(aws_conn_id="s3_conn")
     hook.load_file(
@@ -25,7 +27,7 @@ def _upload_to_data_lake(ds):
         replace=True,
     )
 
-def _get_data(ds) -> str:
+def _get_data(ds, ti) -> str:
     url = "https://covid19.ddc.moph.go.th/api/Cases/timeline-cases-all"
     response = requests.get(url)
     data = response.json()
@@ -57,6 +59,7 @@ def _get_data(ds) -> str:
         # writer.writeheader()
         writer.writerow(latest_record)
 
+    ti.xcom_push(key="name", value="Nutsrk")
     return filename
 
 
